@@ -1,46 +1,27 @@
 package com.sethah.spark.sparkopt.examples
 
 import com.sethah.spark.sparkopt.ml.{BaseAlgorithm, MLUtils}
-import com.sethah.spark.sparkopt.ml.optim.loss.{GLMLoss, L1Regularization, L2Regularization, SeparableDiffFun}
+import com.sethah.spark.sparkopt.ml.optim.loss._
 import com.sethah.spark.sparkopt.ml.optim.minimizers._
 import org.apache.spark.ml.{InstanceWrapper, ModelFactory}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.ml.linalg._
-import org.apache.spark.ml.regression.{FamilyAndLink, GLMWrapper, GeneralizedLinearRegression, LinearRegressionModel, LinearRegression => SparkLinearRegression}
-import org.apache.spark.ml.classification.{BinaryLogisticRegressionTrainingSummary, LogisticRegressionModel, LogisticRegression => SparkLogisticRegression}
-import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
-import org.apache.spark.ml.feature.StandardScaler
-import org.apache.spark.rdd.RDD
+import org.apache.spark.ml.classification.LogisticRegression
 import scopt.OptionParser
-import sun.java2d.loops.FillRect.General
 
-object GLMExample {
+object LogisticRegressionExample {
 
   private[this] case class Params(
-    family: String = "binomial",
-    link: String = "logit",
-    minimizer: String = "lbfgs",
-    l1Reg: Double = 0.0,
-    l2Reg: Double = 0.0,
-    fitIntercept: Boolean = true,
-    trainPath: Option[String] = None)
+      minimizer: String = "lbfgs",
+      l1Reg: Double = 0.0,
+      l2Reg: Double = 0.0,
+      fitIntercept: Boolean = true,
+      trainPath: Option[String] = None)
 
   private[this] object Params {
     def parseArgs(args: Array[String]): Params = {
       val params = new OptionParser[Params]("train an existing model") {
-        opt[String]("family")
-          .text("glm family")
-          .action((x, c) => {
-            require(Seq("binomial").contains(x), s"family $x is not supported yet")
-            c.copy(family = x)
-          })
-        opt[String]("link")
-          .text("glm link function")
-          .action((x, c) => {
-            require(Seq("logit").contains(x), s"link $x is not supported yet")
-            c.copy(link = x)
-          })
         opt[String]("minimizer")
           .text("minimizer")
           .action((x, c) => {
@@ -69,13 +50,9 @@ object GLMExample {
       .getOrCreate()
     org.apache.log4j.Logger.getRootLogger.setLevel(org.apache.log4j.Level.WARN)
     val params = Params.parseArgs(args)
-    val df = spark.read.parquet(params.trainPath.get)
-
-    // choose a GLM family and link function
-    val family = GLMWrapper.familyFromString(params.family)
-    val link = GLMWrapper.linkFromString(params.link)
-    val familyAndLink = new FamilyAndLink(family, link)
-    val logLike = GLMWrapper.getLogLikelihood(family)
+    val df = spark
+      .read
+      .parquet(params.trainPath.get)
 
     val numFeatures = df.select("features").first().getAs[Vector](0).size
     val fitIntercept = params.fitIntercept
@@ -90,8 +67,8 @@ object GLMExample {
     val l1Reg = new L1Regularization(indexToReg(params.l1Reg))
 
     // supply the base solver with an optimizer, loss function, and initial parameters
-    val instanceFunc = GLMLoss.apply(_: InstanceWrapper.tpe, familyAndLink, fitIntercept, logLike)
-    val minimizer = minimizerFromString(params.minimizer)
+    val instanceFunc = BinomialLoss.apply(_: InstanceWrapper.tpe, fitIntercept)
+    val minimizer = GLMExample.minimizerFromString(params.minimizer)
     val base = new BaseAlgorithm(instanceFunc)
       .setInitialParams(initialCoefficients)
       .setMinimizer(minimizer)
@@ -100,31 +77,24 @@ object GLMExample {
 
     // fit and evaluate
     val baseModel = base.fit(df)
-    val model = ModelFactory.createGeneralizedLinearRegression(baseModel.uid, baseModel,
-      fitIntercept, familyAndLink)
+    val model = ModelFactory.createBinaryLogisticRegression(baseModel.uid, baseModel, fitIntercept)
     val summary = model.evaluate(df)
 
     val regParam = params.l1Reg + params.l2Reg
     val elasticNetParam = if (regParam == 0.0) 0.0 else params.l1Reg / regParam
-    val sparkEstimator = new SparkLogisticRegression()
+    val sparkEstimator = new LogisticRegression()
       .setRegParam(regParam)
       .setElasticNetParam(elasticNetParam)
       .setStandardization(false)
     val sparkModel = sparkEstimator.fit(df)
+    val sparkSummary = sparkModel.evaluate(df)
     println(model.coefficients)
     println(model.intercept)
-    println(summary.aic)
-  }
-
-  def minimizerFromString(
-     minimizer: String): IterativeMinimizer[Vector,
-    SeparableDiffFun[RDD], IterativeMinimizerState[Vector]] = {
-    minimizer match {
-      case "lbfgs" => new LBFGS()
-      case "admm" => new ConsensusADMM(new LBFGS().setMaxIter(20))
-      case "owlqn" => new OWLQN()
-      case _ => throw new IllegalArgumentException(s"minimizer $minimizer not supported")
-    }
+    println(sparkModel.coefficients)
+    println(sparkModel.intercept)
+    println(summary.accuracy)
+    println(sparkSummary.accuracy)
   }
 
 }
+

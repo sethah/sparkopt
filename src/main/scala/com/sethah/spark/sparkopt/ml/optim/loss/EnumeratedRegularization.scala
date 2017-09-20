@@ -28,7 +28,7 @@ trait EnumeratedRegularization[T]
 
 }
 
-private[ml] class L1Regularization(override val regFunc: Int => Double)
+class L1Regularization(override val regFunc: Int => Double)
   extends EnumeratedRegularization[Vector] {
 
   override def apply(x: Vector): Double = {

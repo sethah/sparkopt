@@ -1,11 +1,14 @@
 package org.apache.spark.ml
 
-import com.sethah.spark.sparkopt.ml.{BaseAlgorithm, BaseAlgorithmModel}
+import com.sethah.spark.sparkopt.ml.BaseAlgorithmModel
 import org.apache.spark.ml.classification.LogisticRegressionModel
 import org.apache.spark.ml.linalg._
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.regression.{FamilyAndLink, GeneralizedLinearRegressionModel, LinearRegressionModel}
 
+/**
+ * Wrapper methods to hack into Spark's internals for creating models.
+ */
 object ModelFactory {
 
   def createBinaryLogisticRegression(
@@ -29,14 +32,15 @@ object ModelFactory {
   }
 
   def createGeneralizedLinearRegression(
-                              uid: String,
-                              baseModel: BaseAlgorithmModel,
-                              fitIntercept: Boolean,
-                              familyAndLink: FamilyAndLink): GeneralizedLinearRegressionModel = {
+      uid: String,
+      baseModel: BaseAlgorithmModel,
+      fitIntercept: Boolean,
+      familyAndLink: FamilyAndLink): GeneralizedLinearRegressionModel = {
     val allCoef = baseModel.coefficients.toArray
     val coef = if (fitIntercept) Vectors.dense(allCoef.init) else Vectors.dense(allCoef)
     val intercept = if (fitIntercept) allCoef.last else 0.0
-    val glr = new GeneralizedLinearRegressionModel(uid, coef, intercept).copy(baseModel.extractParamMap())
+    val glr = new GeneralizedLinearRegressionModel(uid, coef, intercept)
+      .copy(baseModel.extractParamMap())
     val extra = new ParamMap()
       .put(glr.family, familyAndLink.family.name)
       .put(glr.link, familyAndLink.link.name)

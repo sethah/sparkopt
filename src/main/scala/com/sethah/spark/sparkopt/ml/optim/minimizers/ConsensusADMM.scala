@@ -28,21 +28,23 @@ import scala.collection.mutable
 
 trait ConsensusADMMParams extends Params {
 
-  final val maxIter: IntParam = new IntParam(this, "maxIter", "", ParamValidators.gt(0))
+  final val maxIter: IntParam = new IntParam(this, "maxIter", "Maximum number of iterations.",
+    ParamValidators.gt(0))
 
   def getMaxIter: Int = $(maxIter)
 
-  final val rho: DoubleParam = new DoubleParam(this, "rho", "rho", ParamValidators.gt(0.0))
+  final val rho: DoubleParam = new DoubleParam(this, "rho", "The initial step size for ADMM.",
+    ParamValidators.gt(0.0))
 
   def getRho: Double = $(rho)
 
-  final val primalTol: DoubleParam = new DoubleParam(this, "primalTol", "primalTol",
-    ParamValidators.gt(0.0))
+  final val primalTol: DoubleParam = new DoubleParam(this, "primalTol", "Primal tolerance to use" +
+    "for ADMM convergence.", ParamValidators.gt(0.0))
 
   def getPrimalTol: Double = $(primalTol)
 
-  final val dualTol: DoubleParam = new DoubleParam(this, "dualTol", "dualTol",
-    ParamValidators.gt(0.0))
+  final val dualTol: DoubleParam = new DoubleParam(this, "dualTol", "Dual tolerance to use " +
+    "for ADMM convergence.", ParamValidators.gt(0.0))
 
   def getDualTol: Double = $(dualTol)
 
@@ -109,7 +111,6 @@ class ConsensusADMM(partitionMinimizer: IterativeMinimizer[Vector,
             lastIter = optIterations.next()
             arrayBuilder += lastIter.loss
           }
-          //        println(s"iter: ${state.iter}, Params: ${lastIter.params}")
           Iterator.single(ADMMIterationState(lastIter.loss, u, lastIter.params, 1, residual))
         }.persist(StorageLevel.MEMORY_AND_DISK)
 
