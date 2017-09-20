@@ -12,7 +12,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.mllib.linalg.{DenseVector => OldDenseVector, Vector => OldVector}
 import org.apache.spark.sql.functions._
 
 trait BaseAlgorithmParams extends Params with HasMinimizer {

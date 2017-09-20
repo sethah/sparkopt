@@ -131,6 +131,7 @@ class ConsensusADMM(partitionMinimizer: IterativeMinimizer[Vector,
 
       state.subModels.unpersist()
 
+      // TODO: this is really terrible
       val regLoss = lossFunction.regularizers match {
         case List(l2: L2Regularization) =>
           val zSumArray = zSum.toArray

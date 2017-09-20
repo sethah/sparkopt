@@ -46,7 +46,7 @@ object LogisticRegressionExample {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession
       .builder
-      .appName("GLMOptimizationExample")
+      .appName("LogRegOptimizationExample")
       .getOrCreate()
     org.apache.log4j.Logger.getRootLogger.setLevel(org.apache.log4j.Level.WARN)
     val params = Params.parseArgs(args)
@@ -92,8 +92,8 @@ object LogisticRegressionExample {
     println(model.intercept)
     println(sparkModel.coefficients)
     println(sparkModel.intercept)
-    println(summary.accuracy)
-    println(sparkSummary.accuracy)
+//    println(summary.accuracy)
+//    println(sparkSummary.accuracy)
   }
 
 }
