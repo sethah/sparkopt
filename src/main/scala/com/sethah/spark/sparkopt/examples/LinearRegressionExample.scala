@@ -51,7 +51,7 @@ object LinearRegressionExample {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession
       .builder
-      .appName("GLMOptimizationExample")
+      .appName("LinRegOptimizationExample")
       .getOrCreate()
     org.apache.log4j.Logger.getRootLogger.setLevel(org.apache.log4j.Level.WARN)
     val params = Params.parseArgs(args)
