@@ -1,6 +1,6 @@
 package com.sethah.spark.sparkopt.examples
 
-import com.sethah.spark.sparkopt.ml.{BaseAlgorithm, MLUtils}
+import com.sethah.spark.sparkopt.ml.BaseAlgorithm
 import com.sethah.spark.sparkopt.ml.optim.loss._
 import com.sethah.spark.sparkopt.ml.optim.minimizers._
 import org.apache.spark.ml.{InstanceWrapper, ModelFactory}
@@ -67,7 +67,7 @@ object LogisticRegressionExample {
     val l1Reg = new L1Regularization(indexToReg(params.l1Reg))
 
     // supply the base solver with an optimizer, loss function, and initial parameters
-    val instanceFunc = BinomialLoss.apply(_: InstanceWrapper.tpe, fitIntercept)
+    val instanceFunc = BinomialLoss.apply(_: InstanceWrapper.Instance, fitIntercept)
     val minimizer = GLMExample.minimizerFromString(params.minimizer)
     val base = new BaseAlgorithm(instanceFunc)
       .setInitialParams(initialCoefficients)

@@ -17,39 +17,42 @@ import org.apache.spark.sql.functions._
 trait BaseAlgorithmParams extends Params with HasMinimizer {
 
   final val initialParams: Param[Vector] = new Param(this,
-    "initialParams", "")
+    "initialParams", "Vector of initial parameters to use as starting point in the optimizer.")
 
   def getInitialParams: Vector = $(initialParams)
 
   final val featuresCol: Param[String] = new Param(this,
-    "featuresCol", "")
+    "featuresCol", "Name of column to use for feature vectors in the input dataframe.")
 
   def getFeaturesCol: String = $(featuresCol)
 
-  final val labelCol: Param[String] = new Param(this, "labelCol", "")
+  final val labelCol: Param[String] = new Param(this, "labelCol",
+    "Name of column to use for labels in the input dataframe.")
 
   def getLabelCol: String = $(labelCol)
 
-  final val weightCol: Param[String] = new Param(this, "weightCol", "")
+  final val weightCol: Param[String] = new Param(this, "weightCol",
+    "Name of column to use for sample weights in the input dataframe.")
 
   def getWeightCol: String = $(weightCol)
 
   final val l2Reg: Param[EnumeratedRegularization[Vector]] =
-    new Param[EnumeratedRegularization[Vector]](this, "l2Reg", "")
+    new Param[EnumeratedRegularization[Vector]](this, "l2Reg", "L2 regularization instance.")
 
   def getL2Reg: EnumeratedRegularization[Vector] = $(l2Reg)
 
   final val l1Reg: Param[EnumeratedRegularization[Vector]] =
-    new Param[EnumeratedRegularization[Vector]](this, "l1Reg", "")
+    new Param[EnumeratedRegularization[Vector]](this, "l1Reg", "L1 regularization instance")
 
   def getL1Reg: EnumeratedRegularization[Vector] = $(l1Reg)
 
 }
 
-class BaseAlgorithm(override val uid: String, instanceLoss: InstanceWrapper.tpe => DiffFun[Vector])
+class BaseAlgorithm(override val uid: String,
+                    instanceLoss: InstanceWrapper.Instance => DiffFun[Vector])
   extends Estimator[BaseAlgorithmModel] with BaseAlgorithmParams {
 
-  def this(instanceLoss: InstanceWrapper.tpe => DiffFun[Vector]) =
+  def this(instanceLoss: InstanceWrapper.Instance => DiffFun[Vector]) =
     this(Identifiable.randomUID("base"), instanceLoss)
 
   override type MinimizerType = IterativeMinimizer[Vector,
@@ -80,10 +83,10 @@ class BaseAlgorithm(override val uid: String, instanceLoss: InstanceWrapper.tpe 
 
   override def fit(dataset: Dataset[_]): BaseAlgorithmModel = {
     val w = if ($(weightCol).isEmpty) lit(1.0) else col($(weightCol))
-    val instances: RDD[InstanceWrapper.tpe] =
+    val instances: RDD[InstanceWrapper.Instance] =
       dataset.select(col("label"), w, col($(featuresCol))).rdd.map {
         case Row(label: Double, weight: Double, features: Vector) =>
-          InstanceWrapper.Instance(label, weight, features)
+          InstanceWrapper.create(label, weight, features)
       }
     instances.persist(StorageLevel.MEMORY_AND_DISK)
 

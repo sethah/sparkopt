@@ -19,9 +19,7 @@ package com.sethah.spark.sparkopt.ml.optim.loss
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.linalg.{Vector, Vectors}
 import org.apache.spark.ml.InstanceWrapper
-import org.apache.spark.ml.linalg.BLASWrapper.{instance => BLAS}
 import org.apache.spark.ml.regression.{FamilyAndLink, GLMWrapper}
-import org.apache.spark.mllib.util.MLUtils
 
 trait InstanceLoss extends DiffFun[Vector] {
 
@@ -30,7 +28,7 @@ trait InstanceLoss extends DiffFun[Vector] {
 }
 
 case class BinomialLoss(
-    instance: InstanceWrapper.tpe,
+    instance: InstanceWrapper.Instance,
     fitIntercept: Boolean) extends InstanceLoss {
 
   private val numFeaturesPlusIntercept = instance.features.size + (if (fitIntercept) 1 else 0)
@@ -91,7 +89,7 @@ case class BinomialLoss(
 }
 
 case class StdBinomialLoss(
-                            instance: InstanceWrapper.tpe,
+                            instance: InstanceWrapper.Instance,
                             fitIntercept: Boolean,
                             featuresStd: Broadcast[Array[Double]]) extends InstanceLoss {
 
@@ -152,7 +150,7 @@ case class StdBinomialLoss(
 
 }
 
-case class SquaredLoss(instance: InstanceWrapper.tpe, fitIntercept: Boolean)
+case class SquaredLoss(instance: InstanceWrapper.Instance, fitIntercept: Boolean)
   extends InstanceLoss {
 
   override val weight: Double = instance.weight
@@ -191,7 +189,7 @@ case class SquaredLoss(instance: InstanceWrapper.tpe, fitIntercept: Boolean)
   }
 }
 case class StdSquaredLoss(
-    instance: InstanceWrapper.tpe,
+    instance: InstanceWrapper.Instance,
     fitIntercept: Boolean,
     labelStd: Double,
     featuresStd: Broadcast[Array[Double]]) extends InstanceLoss {
@@ -234,54 +232,8 @@ case class StdSquaredLoss(
   }
 }
 
-//case class StdGLMLoss(
-//                       instance: Instance,
-//                       familyAndLink: FamilyAndLink,
-//                       fitIntercept: Boolean,
-//                       featuresStd: Broadcast[Array[Double]]) extends DiffFun[Vector] {
-//
-//  private val numFeaturesPlusIntercept = instance.features.size + (if (fitIntercept) 1 else 0)
-//  override def weight: Double = instance.weight
-//
-//  override def doCompute(x: Vector): (Double, Vector) = {
-//    throw new NotImplementedError("not implemented!")
-//  }
-//
-//  def doComputeInPlace(x: Vector, grad: Vector): Double = {
-//    val localFeaturesStd = featuresStd.value
-//    val localCoefficients = x.toArray
-//    val eta = {
-//      var sum = 0.0
-//      instance.features.foreachActive { (index, value) =>
-//        if (localFeaturesStd(index) != 0.0 && value != 0.0) {
-//          sum += localCoefficients(index) * value
-//        }
-//      }
-//      if (fitIntercept) sum += localCoefficients(numFeaturesPlusIntercept - 1)
-//      sum
-//    }
-//    val mu = familyAndLink.fitted(eta)
-//    val error = mu - instance.label
-//    val mult = error / (familyAndLink.link.deriv(mu) * familyAndLink.family.variance(mu))
-//
-//    if (error != 0) {
-//      val localGradientSumArray = grad.toArray
-//      instance.features.foreachActive { (index, value) =>
-//        val fStd = localFeaturesStd(index)
-//        if (fStd != 0.0 && value != 0.0) {
-//          localGradientSumArray(index) += weight * mult * value / fStd
-//        }
-//      }
-//      if (fitIntercept) localGradientSumArray(instance.features.size) += weight * mult
-//    }
-//    val ll = -familyAndLink.family.logLikelihood(instance.label, mu, weight)
-//    //    println(ll)
-//    ll
-//  }
-//}
-
 case class GLMLoss(
-                    instance: InstanceWrapper.tpe,
+                    instance: InstanceWrapper.Instance,
                     familyAndLink: FamilyAndLink,
                     fitIntercept: Boolean,
                   logLikelihood: (Double, Double, Double) => Double) extends InstanceLoss {

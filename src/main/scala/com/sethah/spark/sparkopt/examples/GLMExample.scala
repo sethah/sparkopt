@@ -1,6 +1,6 @@
 package com.sethah.spark.sparkopt.examples
 
-import com.sethah.spark.sparkopt.ml.{BaseAlgorithm, MLUtils}
+import com.sethah.spark.sparkopt.ml.BaseAlgorithm
 import com.sethah.spark.sparkopt.ml.optim.loss.{GLMLoss, L1Regularization, L2Regularization, SeparableDiffFun}
 import com.sethah.spark.sparkopt.ml.optim.minimizers._
 import org.apache.spark.ml.{InstanceWrapper, ModelFactory}
@@ -32,13 +32,14 @@ object GLMExample {
         opt[String]("family")
           .text("glm family")
           .action((x, c) => {
-            require(Seq("binomial").contains(x), s"family $x is not supported yet")
+            require(Seq("binomial", "gaussian", "poisson").contains(x),
+              s"family $x is not supported yet")
             c.copy(family = x)
           })
         opt[String]("link")
           .text("glm link function")
           .action((x, c) => {
-            require(Seq("logit").contains(x), s"link $x is not supported yet")
+            require(Seq("logit", "log", "identity").contains(x), s"link $x is not supported yet")
             c.copy(link = x)
           })
         opt[String]("minimizer")
@@ -90,7 +91,8 @@ object GLMExample {
     val l1Reg = new L1Regularization(indexToReg(params.l1Reg))
 
     // supply the base solver with an optimizer, loss function, and initial parameters
-    val instanceFunc = GLMLoss.apply(_: InstanceWrapper.tpe, familyAndLink, fitIntercept, logLike)
+    val instanceFunc = GLMLoss.apply(_: InstanceWrapper.Instance,
+      familyAndLink, fitIntercept, logLike)
     val minimizer = minimizerFromString(params.minimizer)
     val base = new BaseAlgorithm(instanceFunc)
       .setInitialParams(initialCoefficients)

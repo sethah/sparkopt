@@ -45,7 +45,6 @@ trait LBFGSParams extends Params {
   /** @group getParam */
   final def getTol: Double = $(tol)
 
-
 }
 
 class LBFGS(override val uid: String) extends IterativeMinimizer[Vector,

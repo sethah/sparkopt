@@ -1,19 +1,13 @@
 package com.sethah.spark.sparkopt.examples
 
-import com.sethah.spark.sparkopt.ml.{BaseAlgorithm, MLUtils}
+import com.sethah.spark.sparkopt.ml.BaseAlgorithm
 import com.sethah.spark.sparkopt.ml.optim.loss._
-import com.sethah.spark.sparkopt.ml.optim.minimizers._
 import org.apache.spark.ml.{InstanceWrapper, ModelFactory}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.ml.linalg._
-import org.apache.spark.ml.regression.{FamilyAndLink, GLMWrapper, GeneralizedLinearRegression, LinearRegressionModel, LinearRegression => SparkLinearRegression}
-import org.apache.spark.ml.classification.{BinaryLogisticRegressionTrainingSummary, LogisticRegressionModel, LogisticRegression => SparkLogisticRegression}
-import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
-import org.apache.spark.ml.feature.StandardScaler
-import org.apache.spark.rdd.RDD
+import org.apache.spark.ml.regression.{LinearRegression => SparkLinearRegression}
 import scopt.OptionParser
-import sun.java2d.loops.FillRect.General
 
 object LinearRegressionExample {
 
@@ -72,7 +66,7 @@ object LinearRegressionExample {
     val l1Reg = new L1Regularization(indexToReg(params.l1Reg))
 
     // supply the base solver with an optimizer, loss function, and initial parameters
-    val instanceFunc = SquaredLoss.apply(_: InstanceWrapper.tpe, fitIntercept)
+    val instanceFunc = SquaredLoss.apply(_: InstanceWrapper.Instance, fitIntercept)
     val minimizer = GLMExample.minimizerFromString(params.minimizer)
     val base = new BaseAlgorithm(instanceFunc)
       .setInitialParams(initialCoefficients)
