@@ -31,7 +31,8 @@ object Implicits {
 
   implicit object RDDCanAggregate extends Aggregable[RDD] {
     override def aggregate[A: ClassTag, B: ClassTag](
-                                                      ma: RDD[A], b: B)(add: (B, A) => B, combine: (B, B) => B): B = {
+        ma: RDD[A], b: B)(
+        add: (B, A) => B, combine: (B, B) => B): B = {
       ma.treeAggregate(b)(add, combine)
     }
   }

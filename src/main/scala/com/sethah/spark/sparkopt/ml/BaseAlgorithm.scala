@@ -84,7 +84,7 @@ class BaseAlgorithm(override val uid: String,
   override def fit(dataset: Dataset[_]): BaseAlgorithmModel = {
     val w = if ($(weightCol).isEmpty) lit(1.0) else col($(weightCol))
     val instances: RDD[InstanceWrapper.Instance] =
-      dataset.select(col("label"), w, col($(featuresCol))).rdd.map {
+      dataset.select(col($(labelCol)), w, col($(featuresCol))).rdd.map {
         case Row(label: Double, weight: Double, features: Vector) =>
           InstanceWrapper.create(label, weight, features)
       }
@@ -97,7 +97,7 @@ class BaseAlgorithm(override val uid: String,
       cache = true)
     val (lastIter, lossHistory) = $(minimizer).takeLast(costFun, getInitialParams)
     instances.unpersist(blocking = false)
-    copyValues(new BaseAlgorithmModel(uid, lastIter.params))
+    copyValues(new BaseAlgorithmModel(uid, lastIter.params, lossHistory))
   }
 
   private def getRegularizers(): List[EnumeratedRegularization[Vector]] = {
@@ -106,15 +106,16 @@ class BaseAlgorithm(override val uid: String,
     else if (isSet(l2Reg)) List($(l2Reg))
     else List.empty
   }
-
-
 }
 
-class BaseAlgorithmModel(override val uid: String, val coefficients: Vector)
+class BaseAlgorithmModel(
+    override val uid: String,
+    val coefficients: Vector,
+    val lossHistory: Array[Double])
   extends Model[BaseAlgorithmModel] with BaseAlgorithmParams {
 
   override def transform(dataset: Dataset[_]): DataFrame = {
-    dataset.toDF()
+    throw new NotImplementedError("Base algorithm doesn't support transform")
   }
 
   override def transformSchema(schema: StructType): StructType = schema

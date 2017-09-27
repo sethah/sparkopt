@@ -20,6 +20,10 @@ import com.sethah.spark.sparkopt.ml.optim.loss.DiffFun
 import org.apache.spark.ml.linalg.{Vector, Vectors}
 import org.apache.spark.ml.linalg.BLASWrapper.{instance => BLAS}
 
+/**
+ * This class provides a way to sum up gradients computed over one or more differentiable functions.
+ * @param coef Vector of coefficients used to evaluate each differentiable function.
+ */
 private[ml] class DiffFunAggregator(coef: Vector) extends Serializable {
 
   lazy val coefficients: Vector = coef

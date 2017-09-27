@@ -1,4 +1,6 @@
-This project provides flexible abstractions for building machine learning
+# Spark-Opt
+
+Spark-Opt provides flexible abstractions for building machine learning
 models/algorithms using Apache Spark ML. Specifically, the following are
 easily customizable:
 
@@ -13,7 +15,9 @@ existing Spark ML algorithms.
 
 ## Build
 
-### Build Spark-2.3.0-SNAPSHOT
+### Build SPARK-2.3.0-SNAPSHOT
+
+This project requires building Spark 2.3+.
 
 ````
 git clone https://github.com/apache/spark

@@ -19,7 +19,7 @@ package com.sethah.spark.sparkopt.ml.optim.loss
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.linalg.{Vector, Vectors}
 import org.apache.spark.ml.InstanceWrapper
-import org.apache.spark.ml.regression.{FamilyAndLink, GLMWrapper}
+import org.apache.spark.ml.regression.FamilyAndLink
 
 trait InstanceLoss extends DiffFun[Vector] {
 
@@ -27,6 +27,9 @@ trait InstanceLoss extends DiffFun[Vector] {
 
 }
 
+/**
+ * Binomial instance loss function.
+ */
 case class BinomialLoss(
     instance: InstanceWrapper.Instance,
     fitIntercept: Boolean) extends InstanceLoss {
@@ -88,16 +91,23 @@ case class BinomialLoss(
   }
 }
 
+/**
+ * Standardized binomial loss function. Computes the binomial loss and gradient, where features are
+ * automatically standardized to unit variance.
+ * @param featuresStd Standard deviations of each feature.
+ */
 case class StdBinomialLoss(
-                            instance: InstanceWrapper.Instance,
-                            fitIntercept: Boolean,
-                            featuresStd: Broadcast[Array[Double]]) extends InstanceLoss {
+    instance: InstanceWrapper.Instance,
+    fitIntercept: Boolean,
+    featuresStd: Broadcast[Array[Double]]) extends InstanceLoss {
 
   private val numFeaturesPlusIntercept = instance.features.size + (if (fitIntercept) 1 else 0)
   override def weight: Double = instance.weight
 
   override def doCompute(x: Vector): (Double, Vector) = {
-    throw new NotImplementedError("not implemented!")
+    val grad = Vectors.zeros(x.size)
+    val loss = computeInPlace(x, grad)
+    (loss, grad)
   }
 
   def doComputeInPlace(x: Vector, grad: Vector): Double = {
@@ -150,6 +160,9 @@ case class StdBinomialLoss(
 
 }
 
+/**
+ * Linear least squares loss function.
+ */
 case class SquaredLoss(instance: InstanceWrapper.Instance, fitIntercept: Boolean)
   extends InstanceLoss {
 
@@ -188,6 +201,12 @@ case class SquaredLoss(instance: InstanceWrapper.Instance, fitIntercept: Boolean
     fitIntercept && index == instance.features.size - 1
   }
 }
+
+/**
+ * Standardized linear least squares loss function. Computes the squared error loss and gradient,
+ * where features are automatically standardized to unit variance.
+ * @param featuresStd Standard deviations of each feature.
+ */
 case class StdSquaredLoss(
     instance: InstanceWrapper.Instance,
     fitIntercept: Boolean,
@@ -232,11 +251,17 @@ case class StdSquaredLoss(
   }
 }
 
+/**
+ * Generic loss function for any GLM link+family pair.
+ * @param familyAndLink [[FamilyAndLink]] used for computing link derivative and family variance.
+ * @param logLikelihood Function that produces the log-likelihood for a single
+ *                      (label, weight, feature)
+ */
 case class GLMLoss(
-                    instance: InstanceWrapper.Instance,
-                    familyAndLink: FamilyAndLink,
-                    fitIntercept: Boolean,
-                  logLikelihood: (Double, Double, Double) => Double) extends InstanceLoss {
+    instance: InstanceWrapper.Instance,
+    familyAndLink: FamilyAndLink,
+    fitIntercept: Boolean,
+    logLikelihood: (Double, Double, Double) => Double) extends InstanceLoss {
 
   private val numFeaturesPlusIntercept = instance.features.size + (if (fitIntercept) 1 else 0)
   override def weight: Double = instance.weight
